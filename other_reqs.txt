@@ -1,0 +1,11 @@
+neuraloperator
+einops
+wandb
+kaggle
+gcsfs
+cfgrib
+cdsapi
+xesmf
+torch
+optuna
+dotenv

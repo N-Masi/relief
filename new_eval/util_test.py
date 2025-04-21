@@ -7,7 +7,7 @@ import pygmt
 from new_eval.util import *
 
 # https://mathworld.wolfram.com/OblateSpheroid.html
-# 2*math.pi*a*a+math.pi*(c**2/e)*math.log((1+e)/(1-e)) # inprecise
+# 2*math.pi*a*a+math.pi*(c**2/e)*math.log((1+e)/(1-e)) # inprecise to use python for calculation
 EARTH_SURFACE_AREA = 510065604944206.145
 
 def test_surface_area_shape():
@@ -199,6 +199,18 @@ def test_surface_area_symmetric_over_equator():
     areas = get_cell_areas((10,400))
     for i in range(areas.shape[0]//2):
         assert np.allclose(areas[i], areas[-(i+1)])
+
+def test_approximate_equatorial_grid_distance():
+    # equatorial circumference: 40075017m
+
+    areas = areas = get_cell_areas((720, 1440))
+    assert np.allclose(np.sqrt(np.max(areas)), 40075017/1440)
+
+    areas = get_cell_areas((4320,8640))
+    assert np.allclose(np.sqrt(np.max(areas)), 40075017/8640)
+
+    areas = get_cell_areas((21600,43200)) 
+    assert np.allclose(np.sqrt(np.max(areas)), 40075017/43200)
 
 # def test_water_coverage_sanity_check():
 #     landmask = pygmt.datasets.load_earth_mask(resolution='15s', registration='pixel')

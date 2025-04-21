@@ -29,3 +29,7 @@ dotenv
 rasterio
 geopandas
 pytest
+geojson
+requests_cache
+earthengine-api
+pygeoboundaries_geolab @ git+https://github.com/N-Masi/pygeoboundaries.git

@@ -6,3 +6,12 @@ __pycache__/*
 *.DS_Store
 .pytest_cache
 *.sqlite
+*.npy
+data/era5/*
+lightning_logs
+lightning_logs/*
+*.out
+outputs
+outputs/*
+multirun/
+multirun/*

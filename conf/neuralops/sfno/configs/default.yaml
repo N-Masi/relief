@@ -1,0 +1,52 @@
+sfno:
+  hyperparams:
+    n_modes: ${as_tuple:16,16}
+    in_channels: 14
+    out_channels: 14
+    hidden_channels: 64
+  optim:
+    lr: 8e-4
+    weight_decay: 0.0
+  scheduler:
+    T_max: 30
+  training:
+    n_epoch: 40
+  finetuning:
+    n_epoch: 5
+
+env:
+  seed: 17
+
+# https://lightning.ai/docs/pytorch/stable/common/trainer.html#trainer-class-api
+trainer:
+  num_nodes: 1
+  max_epochs: -1
+
+era5:
+  data_gs_dir: 'gs://weatherbench2/datasets/era5/1959-2023_01_10-6h-64x32_equiangular_conservative'
+  data_local_dir: '/data/era5/'
+  data_vars: [
+    '10m_u_component_of_wind', 
+    '10m_v_component_of_wind',
+    '2m_temperature',
+    'surface_pressure',
+    'mean_sea_level_pressure',
+    'total_column_water_vapour',
+    'geopotential',
+    'temperature',
+    'u_component_of_wind', 
+    'v_component_of_wind',
+    'relative_humidity'
+  ]
+  data_vars_levels:
+    geopotential: [50, 250, 500, 850, 1000]
+    temperature: [100, 250, 500, 850]
+    u_component_of_wind: [250, 500, 850, 1000]
+    v_component_of_wind: [250, 500, 850, 1000]
+    relative_humidity: [500]
+  autoregressive_steps: 1
+  val_ratio: 0.2
+  batch_size: 16
+
+wandb:
+  use_wandb: True

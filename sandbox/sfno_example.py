@@ -8,6 +8,7 @@ import xarray as xr
 import cfgrib
 import pdb
 import gcsfs
+import fsspec
 from torch.utils.data import Dataset, DataLoader
 import numpy as np
 
@@ -19,7 +20,7 @@ DEVICE = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 # get data from WB2
 ds = xr.open_zarr('gs://weatherbench2/datasets/era5/1959-2023_01_10-6h-64x32_equiangular_conservative.zarr')
 print('loaded in data')
-dataset_vars = ['2m_temperature'] # cut down to 1 channel
+dataset_vars = ['2m_temperature', 'wind_speed'] # cut down to 1 channel
 # dataset_vars = [name for name in ds.data_vars] # TODO: normalize data
 ds = ds[dataset_vars] 
 print(f'reduced data down to vars: {dataset_vars}')
@@ -66,7 +67,7 @@ print('created datasets from data')
 train_loader = DataLoader(era5ds_train, batch_size=16, shuffle=True)
 print('created train_loader from dataset')
 test_loader = DataLoader(era5ds_test, batch_size=16, shuffle=True) # TODO: should test loader not be shuffled for autoregressive rollout?
-test_loaders = {'32x64': test_loader} # key might need to be an int
+test_loaders = {'32x64': test_loader}
 print('created test_loader from dataset')
 
 # modified loss fn to track per gridpoint loss
@@ -197,7 +198,7 @@ class HookedLpLoss(object):
 
 # more efficient SFNO for demo purposes
 print('instantiated model')
-model = SFNO(n_modes=(16, 16), in_channels=1, out_channels=1, hidden_channels=64)
+model = SFNO(n_modes=(16, 16), in_channels=14, out_channels=14, hidden_channels=64)
 hooked_loss_fn = HookedLpLoss(d=2)
 def hook_fn(module, input, output):
     # put module in eval mode

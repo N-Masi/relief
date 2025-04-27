@@ -58,3 +58,4 @@ def calc_rad_at_phi(phi):
     f4 = (polar_rad*math.sin(phi))**2
     radius = math.sqrt((f1+f2)/(f3+f4))
     return radius
+    

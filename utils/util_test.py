@@ -4,7 +4,8 @@ import math
 import numpy as np
 import xarray as xr
 import pygmt
-from new_eval.util import *
+from utils.surface_area import *
+from utils.xarray_funcs import *
 
 # https://mathworld.wolfram.com/OblateSpheroid.html
 # 2*math.pi*a*a+math.pi*(c**2/e)*math.log((1+e)/(1-e)) # inprecise to use python for calculation
@@ -212,12 +213,60 @@ def test_approximate_equatorial_grid_distance():
     areas = get_cell_areas((21600,43200)) 
     assert np.allclose(np.sqrt(np.max(areas)), 40075017/43200)
 
-# def test_water_coverage_sanity_check():
-#     landmask = pygmt.datasets.load_earth_mask(resolution='15s', registration='pixel')
-#     landmask = landmask.reindex(lat=list(reversed(landmask.lat)))
-#     areas = get_cell_areas(landmask)
-#     ocean_area = np.where(landmask==0, 1, 0)*areas
-#     lake_area = np.where(landmask==2, 1, 0)*areas
-#     lake_in_lake_area = np.where(landmask==4, 1, 0)*areas
-#     perc_water = (np.sum(ocean_area)+np.sum(lake_area)+np.sum(lake_in_lake_area))/np.sum(areas)
-#     assert ~71%
+def test_water_coverage_sanity_check():
+    landmask = pygmt.datasets.load_earth_mask(resolution='15s', registration='pixel')
+    landmask = flip_xarray_over_equator(landmask, 'lat')
+    areas = get_cell_areas(landmask.shape)
+    ocean_area = np.where(landmask==0, 1, 0)*areas
+    lake_area = np.where(landmask==2, 1, 0)*areas
+    lake_in_lake_area = np.where(landmask==4, 1, 0)*areas
+    perc_water = (np.sum(ocean_area)+np.sum(lake_area)+np.sum(lake_in_lake_area))/np.sum(areas)
+    assert 0.707 <= perc_water <= 0.713
+
+def test_latitude_flipping():
+    # test on xr DataArray
+    landmask = pygmt.datasets.load_earth_mask(resolution='01m', registration='pixel')
+    flipped_landmask = flip_xarray_over_equator(landmask, 'lat')
+    assert np.allclose(landmask, landmask)
+    assert not np.allclose(landmask, flipped_landmask)
+    for i in range(len(landmask.lat.values)//2):
+        assert np.allclose(landmask.isel(lat=i), flipped_landmask.isel(lat=-(i+1)))
+
+    # test on xr Dataset
+    ds = xr.open_zarr(
+        'gs://weatherbench2/datasets/era5/1959-2023_01_10-6h-64x32_equiangular_conservative.zarr', 
+        storage_options={"token": "anon"}, 
+        consolidated=True)
+    ds = ds.isel(time=0)
+    ds = ds[['2m_temperature', 'wind_speed']]
+    flipped_ds = flip_xarray_over_equator(ds, 'latitude')
+    assert np.allclose(ds.to_dataarray(), ds.to_dataarray())
+    assert not np.allclose(ds.to_dataarray(), flipped_ds.to_dataarray())
+    for i in range(len(ds.latitude.values)//2):
+        assert np.allclose(ds.isel(latitude=i).to_dataarray(), flipped_ds.isel(latitude=-(i+1)).to_dataarray())
+
+def test_longitude_shifting():
+    # test on xr DataArray
+    landmask = pygmt.datasets.load_earth_mask(resolution='01m', registration='pixel')
+    n_shift = 100
+    shifted_landmask = shift_xarray(landmask, n_shift, 'lon')
+    assert np.allclose(landmask, landmask)
+    assert not np.allclose(landmask, shifted_landmask)
+    num_lon = len(landmask.lon.values)
+    for i in range(num_lon//2):
+        assert np.allclose(landmask.isel(lon=i), shifted_landmask.isel(lon=(i+n_shift)%num_lon))
+
+    # test on xr Dataset
+    ds = xr.open_zarr(
+        'gs://weatherbench2/datasets/era5/1959-2023_01_10-6h-64x32_equiangular_conservative.zarr', 
+        storage_options={"token": "anon"}, 
+        consolidated=True)
+    ds = ds.isel(time=0)
+    ds = ds[['2m_temperature', 'wind_speed']]
+    num_lon = len(ds.longitude.values)
+    n_shift =  num_lon//2
+    shifted_ds = shift_xarray(ds, n_shift, 'longitude')
+    assert np.allclose(ds.to_dataarray(), ds.to_dataarray())
+    assert not np.allclose(ds.to_dataarray(), shifted_ds.to_dataarray())
+    for i in range(num_lon//2):
+        assert np.allclose(ds.isel(longitude=i).to_dataarray(), shifted_ds.isel(longitude=(i+n_shift)%num_lon).to_dataarray())

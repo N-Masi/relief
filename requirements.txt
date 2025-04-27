@@ -10,6 +10,7 @@ torchvision
 torchaudio
 basemap
 xarray
+zarr
 kagglehub
 huggingface_hub
 geotiff
@@ -20,6 +21,7 @@ einops
 wandb
 kaggle
 gcsfs
+fsspec
 cfgrib
 cdsapi
 xesmf
@@ -33,3 +35,7 @@ geojson
 requests_cache
 earthengine-api
 pygeoboundaries_geolab @ git+https://github.com/N-Masi/pygeoboundaries.git
+maskedtensor-nightly
+pytorch_lightning
+rich
+hydra-core

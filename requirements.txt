@@ -39,3 +39,4 @@ maskedtensor-nightly
 pytorch_lightning
 rich
 hydra-core
+wandb

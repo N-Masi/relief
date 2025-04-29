@@ -1,7 +1,10 @@
 import torch
+import pytorch_lightning as pl
 import numpy as np
 from typing import List, Tuple
 from torch.utils.data import Dataset, DataLoader
+from omegaconf import DictConfig, OmegaConf
+from neuralop.losses.data_losses import LpLoss
 import xarray as xr
 import zarr
 import cfgrib
@@ -13,6 +16,37 @@ import json
 import os
 import pdb
 from utils.xarray_funcs import *
+
+class NeuralOpWrapper(pl.LightningModule):
+    def __init__(self, model, optimizer_cfg, scheduler_cfg):
+        super().__init__()
+        self.model = model
+        self.loss_fn = LpLoss(d=2)
+        self.save_hyperparameters(ignore=["model"])
+
+    def forward(self, x):
+        return self.model(x)
+
+    def training_step(self, batch, batch_idx):
+        print(f'in training step, device: {self.device}')
+        x = batch['x']
+        y_hat = self.model(x)
+        y = batch['y']
+        loss = self.loss_fn(y_hat, y)
+        self.log("train/loss", loss, prog_bar=True, on_step=True, on_epoch=True)
+        print(f'train/loss: {loss}')
+        return loss
+
+    def configure_optimizers(self):
+        optimizer = torch.optim.AdamW(self.model.parameters(), **self.hparams.optimizer_cfg)
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, **self.hparams.scheduler_cfg)
+        return {
+            "optimizer": optimizer,
+            "lr_scheduler": {
+                "scheduler": scheduler,
+                "interval": "epoch",
+            }
+        }
 
 class HookedLpLoss(object):
     """
@@ -103,8 +137,6 @@ class ERA5Dataset(Dataset):
             self.ds_x.isel(time=-1).to_dataarray(), 
             self.ds_y.isel(time=-(1+autoregressive_steps)).to_dataarray())
 
-        pdb.set_trace()
-
     def __len__(self):
         return len(self.ds_x.time)
 
@@ -124,12 +156,19 @@ def get_era5_datasets(data_gs_dir: str,
         data_vars: List[str],
         data_vars_levels: dict,
         autoregressive_steps: int,
-        val_ratio: float,
-        batch_size: int) -> Tuple[DataLoader]:
+        batch_size: int,
+        start_year_train: int,
+        end_year_train: int,
+        end_year_val: int) -> Tuple[DataLoader]:
 
     data_gs_filename = os.path.basename(os.path.normpath(data_gs_dir))
     data_vars = sorted(list(data_vars))
-    vars_hash = hashlib.md5(json.dumps(data_vars, sort_keys=True).encode()).hexdigest() # TODO: also hash vertical levels
+    vars_hash = hashlib.md5(
+        json.dumps(data_vars, sort_keys=True).encode()
+        # Don't currently hash by vertical level too because all data for variables is json dumped,
+        # and vertical level filtering is done later in initializing the ERA5Dataset
+        # + json.dumps(OmegaConf.to_container(data_vars_levels), sort_keys=True).encode()
+        ).hexdigest()
     file_dir = os.getcwd() + data_local_dir + data_gs_filename
     file_path = file_dir + f'/{vars_hash}.pkl'
     if os.path.exists(file_path):
@@ -146,22 +185,28 @@ def get_era5_datasets(data_gs_dir: str,
         with open(file_path, 'wb') as f:
             pickle.dump(ds, f)
 
-    num_samples = len(ds.time)
-    num_train_samples = round(num_samples*(1-val_ratio))
+    # num_samples = len(ds.time)
+    # num_train_samples = round(num_samples*(1-val_ratio))
     nlat = len(ds.latitude)
     nlon = len(ds.longitude)
     era5ds_train = ERA5Dataset(
-        ds.isel(time=slice(0, num_train_samples)), 
+        ds.isel(time=slice(str(start_year_train)+"-01-01", str(end_year_train)+"-12-31")), 
         vertical_levels=data_vars_levels,
         nlat=nlat, 
         nlon=nlon,
         autoregressive_steps=autoregressive_steps)
     era5ds_val = ERA5Dataset(
-        ds.isel(time=slice(num_train_samples, None)), 
+        ds.isel(time=slice(str(end_year_train+1)+"-01-01", str(end_year_val)+"-12-31")), 
         vertical_levels=data_vars_levels,
         nlat=nlat, 
         nlon=nlon,
         autoregressive_steps=autoregressive_steps)
-    train_loader = DataLoader(era5ds_train, batch_size=batch_size, shuffle=True)
-    val_loader = DataLoader(era5ds_val, batch_size=batch_size, shuffle=False)
+    train_loader = DataLoader(
+        era5ds_train, 
+        batch_size=batch_size,
+        shuffle=True)
+    val_loader = DataLoader(
+        era5ds_val, 
+        batch_size=batch_size,
+        shuffle=False)
     return (train_loader, val_loader)

@@ -15,3 +15,7 @@ outputs
 outputs/*
 multirun/
 multirun/*
+checkpoints
+checkpoints/*
+wandb
+wandb/*

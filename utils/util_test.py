@@ -15,6 +15,15 @@ def test_surface_area_shape():
     areas = get_cell_areas((2,4))
     assert areas.shape == (2,4)
 
+    areas = get_cell_areas((2,5))
+    assert areas.shape == (2,5)
+
+    areas = get_cell_areas((4,2))
+    assert areas.shape == (4,2)
+
+    areas = get_cell_areas((5,2))
+    assert areas.shape == (5,2)
+
     areas = get_cell_areas((4,8))
     assert areas.shape == (4,8)
 
@@ -44,6 +53,15 @@ def test_total_surface_area():
     assert np.allclose(np.sum(areas), EARTH_SURFACE_AREA)
 
     areas = get_cell_areas((720, 1440))
+    assert np.allclose(np.sum(areas), EARTH_SURFACE_AREA)
+
+    areas = get_cell_areas((721, 1440))
+    assert np.allclose(np.sum(areas), EARTH_SURFACE_AREA)
+
+    areas = get_cell_areas((1440, 720))
+    assert np.allclose(np.sum(areas), EARTH_SURFACE_AREA)
+
+    areas = get_cell_areas((1440, 721))
     assert np.allclose(np.sum(areas), EARTH_SURFACE_AREA)
 
     areas = get_cell_areas((4320,8640))
@@ -82,6 +100,24 @@ def test_surface_area_max_is_equator():
     argmax = np.unravel_index(np.argmax(areas), areas.shape)
     assert equator_top_index == argmax[0]
     assert np.allclose(areas[equator_top_index], areas[equator_top_index+1])
+
+    areas = get_cell_areas((721, 1440))
+    equator_index = areas.shape[0]//2
+    argmax = np.unravel_index(np.argmax(areas), areas.shape)
+    assert equator_index == argmax[0]
+    assert np.allclose(areas[equator_index-1], areas[equator_index+1])
+
+    areas = get_cell_areas((1440, 720))
+    equator_top_index = (areas.shape[1]//2)-1
+    argmax = np.unravel_index(np.argmax(areas), areas.shape)
+    assert equator_top_index == argmax[1]
+    assert np.allclose(areas[0, equator_top_index], areas[0, equator_top_index+1])
+
+    areas = get_cell_areas((1440, 721))
+    equator_index = (areas.shape[1]//2)
+    argmax = np.unravel_index(np.argmax(areas), areas.shape)
+    assert equator_index == argmax[1]
+    assert np.allclose(areas[0, equator_index-1], areas[0, equator_index+1])
 
     areas = get_cell_areas((4320,8640))
     equator_top_index = (areas.shape[0]//2)-1
@@ -142,6 +178,36 @@ def test_surface_area_is_monotonic_over_lat():
         assert areas[i, 0] > areas[i+1, 0]
     assert np.all(areas[areas.shape[0]-1] == areas[areas.shape[0]-1, 0])
 
+    areas = get_cell_areas((721, 1440))
+    for i in range(areas.shape[0]//2):
+        assert np.all(areas[i] == areas[i, 0])
+        assert areas[i, 0] < areas[i+1, 0]
+    assert np.all(areas[areas.shape[0]//2] == areas[areas.shape[0]//2, 0])
+    for i in range(areas.shape[0]//2, areas.shape[0]-1):
+        assert np.all(areas[i] == areas[i, 0])
+        assert areas[i, 0] > areas[i+1, 0]
+    assert np.all(areas[areas.shape[0]-1] == areas[areas.shape[0]-1, 0])
+
+    areas = get_cell_areas((1440, 720))
+    for i in range(areas.shape[1]//2-1):
+        assert np.all(areas[:, i] == areas[0, i])
+        assert areas[0, i] < areas[0, i+1]
+    assert np.all(areas[:, areas.shape[1]//2-1] == areas[0, areas.shape[1]//2-1])
+    for i in range(areas.shape[1]//2, areas.shape[1]-1):
+        assert np.all(areas[:, i] == areas[0, i])
+        assert areas[0, i] > areas[0, i+1]
+    assert np.all(areas[:, areas.shape[1]-1] == areas[0, areas.shape[1]-1])
+
+    areas = get_cell_areas((1440, 721))
+    for i in range(areas.shape[1]//2): 
+        assert np.all(areas[:, i] == areas[0, i])
+        assert areas[0, i] < areas[0, i+1]
+    assert np.all(areas[:, areas.shape[1]//2] == areas[0, areas.shape[1]//2])
+    for i in range(areas.shape[1]//2, areas.shape[1]-1):
+        assert np.all(areas[:, i] == areas[0, i])
+        assert areas[0, i] > areas[0, i+1]
+    assert np.all(areas[:, areas.shape[1]-1] == areas[0, areas.shape[1]-1])
+
     areas = get_cell_areas((4320,8640))
     for i in range(areas.shape[0]//2-1):
         assert np.all(areas[i] == areas[i, 0])
@@ -188,6 +254,18 @@ def test_surface_area_symmetric_over_equator():
     areas = get_cell_areas((720, 1440))
     for i in range(areas.shape[0]//2):     
         assert np.allclose(areas[i], areas[-(i+1)])
+
+    areas = get_cell_areas((721, 1440))
+    for i in range(areas.shape[0]//2):     
+        assert np.allclose(areas[i], areas[-(i+1)])
+
+    areas = get_cell_areas((1440, 720))
+    for i in range(areas.shape[1]//2):     
+        assert np.allclose(areas[:, i], areas[:, -(i+1)])
+
+    areas = get_cell_areas((1440, 721))
+    for i in range(areas.shape[1]//2):     
+        assert np.allclose(areas[:, i], areas[:, -(i+1)])
     
     areas = get_cell_areas((4320,8640)) 
     for i in range(areas.shape[0]//2):
@@ -205,6 +283,9 @@ def test_approximate_equatorial_grid_distance():
     # equatorial circumference: 40075017m
 
     areas = areas = get_cell_areas((720, 1440))
+    assert np.allclose(np.sqrt(np.max(areas)), 40075017/1440)
+
+    areas = areas = get_cell_areas((1440, 720))
     assert np.allclose(np.sqrt(np.max(areas)), 40075017/1440)
 
     areas = get_cell_areas((4320,8640))

@@ -3,12 +3,14 @@ import xarray as xr
 import math
 import pdb
 
-def get_cell_areas(data_shape: tuple) -> np.array:
+def get_cell_areas(data_shape: tuple, more_lon_parallels: bool = True) -> np.array:
     '''
     Returns an np.array with the same shape as data that has the area of the cell 
     covered by each gridpoint.
 
     Assumes data at [0,0] is positioned at a pole (+/- 90 degrees).
+
+    # TODO: support non-equiangularity, requires passing in latitude & longitude coords from xarray
     Assumes the difference delta_lat in latitude between samples is constant,
     Assumes the difference delta_lon in longitude between samples is constant,
     But it is not true that delta_lat must equal delta_lon.
@@ -72,4 +74,3 @@ def calc_rad_at_phi(phi):
     f4 = (polar_rad*math.sin(phi))**2
     radius = math.sqrt((f1+f2)/(f3+f4))
     return radius
-    

@@ -51,7 +51,7 @@ Adjust `nnodes` to the number of nodes you have, and `nproc_per_node` to the num
 
 #### Hydra
 
-Example: `python -m neuralops.sfno` will use the `conf/neuralops/sfno/configs/default.yaml` configuration. To run multiple jobs using different configurations, run with the flag:
+Example: `torchrun --standalone --nnodes=1 --nproc_per_node=2 neuralops/sfno.py` will use the `conf/neuralops/sfno/configs/default.yaml` configuration. To run multiple jobs using different configurations, run with the flag:
 
 ```
 --multirun configs=default,<config_filename_2>,...,<config_filename_n>

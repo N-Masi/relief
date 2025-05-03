@@ -1,4 +1,4 @@
-import torch
+ import torch
 import numpy as np
 from typing import Optional
 import sys
@@ -26,26 +26,12 @@ def relief_loss(
     By default, loss is averaged (with weighting by surface area, this can be
     toggled off) across all channels. The <channels_to_measure> 
 
-    TODO: figure out how to integrate all-channel averaged loss vs specific vars in output dict
+    TODO: figure out how to include all-channel averaged loss vs specific vars in output dict
+    TODO: also have a subdirectory for different lead times
     Example of what the returned dictionary may look like:
-    {
-        'country/USA': 0.5,
-        'country/MEX': 0.7,
-        ...
-        'UNSDG-subregion/Northern America': 0.2,
-        ...
-        'landcover/land': 0.3,
-        'landcover/ocean': 0.2,
-        'landcover/lake': 0.25,
-        ...
-        'worldBankIncomeGroup/high-income': 0.6,
-        'worldBankIncomeGroup/low-income': 0.8,
-        ...
-        'population/high-density': 0.65,
-        'population/low-density': 0.4
-    }
+    
 
-    Currently supports 1440x721 resolution (0.25degree) predictions.
+    Currently supports 721x1440 resolution (0.25degree gridline-registered) predictions.
     '''
     if not pred.shape == ground_truth.shape:
         raise ValueError('Predictions and ground truth values must have the same dimensions.')
@@ -55,10 +41,27 @@ def relief_loss(
     if channels_to_measure:
         for key in channels_to_measure.keys():
             if not type(key) == int:
-                raise ValueError('')
+                raise ValueError('') # TODO
 
     # TODO: support different resolutions, with data from WB2 and/or regridding.
     assert sorted(pred.shape)[1] == 721
     assert sorted(pred.shape)[2] == 1440
 
 
+
+
+
+def relief_loss(preds, ground_truth, channel_names, loss_fn):
+    assert preds.shape == ground_truth.shape
+
+    relief_loss = {}
+
+    # TODO: for each channel
+    
+    # TODO: 
+
+
+    # TODO: handle reducing loss across channels
+
+def markdown_relief_loss(relief_loss, filename):
+    # TODO: make a .md file that breaks down the relief loss

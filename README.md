@@ -25,7 +25,7 @@ Use the following steps to set up your python environment:
 conda create -n relief.env
 conda activate relief.env
 pip install --file requirements.txt
-conda install --channel conda-forge pygmt
+conda install --channel conda-forge pygmt plotly
 ```
 After the setup, the environment will be active.
 Deactivate the environment with `conda deactivate`.

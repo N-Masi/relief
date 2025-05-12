@@ -3,10 +3,22 @@ import xarray as xr
 import math
 import pdb
 
-def get_cell_areas(data_shape: tuple, more_lon_parallels: bool = True) -> np.array:
+def get_cell_weights(data_shape: tuple, lat_index: int = 0) -> np.array:
+    assert len(data_shape) == 2
+    assert 0 <= lat_index <= 1
+    assert data_shape[lat_index] < data_shape[1-lat_index]
+    areas = get_cell_areas(data_shape, lat_index)
+    if lat_index == 0:
+        vertical_mean = np.mean(areas[:,0])
+    else:
+        vertical_mean = np.mean(areas[0,:])
+    return areas/vertical_mean
+
+def get_cell_areas(data_shape: tuple, lat_index: int = 0) -> np.array:
     '''
     Returns an np.array with the same shape as data that has the area of the cell 
     covered by each gridpoint.
+    lat_index is the index into data_shape which represents the latitude dimension.
 
     Assumes data at [0,0] is positioned at a pole (+/- 90 degrees).
 
@@ -17,9 +29,9 @@ def get_cell_areas(data_shape: tuple, more_lon_parallels: bool = True) -> np.arr
     '''
 
     assert len(data_shape) == 2
-    lat_indexed = True
-    if data_shape[0] > data_shape[1]:
-        lat_indexed = False
+    assert 0 <= lat_index <= 1
+    assert data_shape[lat_index] < data_shape[1-lat_index]
+    lat_indexed = lat_index == 0
     lon_n = max(data_shape)
     lat_n = min(data_shape)
     pixel_reg_lat = (lat_n%2 == 0)
